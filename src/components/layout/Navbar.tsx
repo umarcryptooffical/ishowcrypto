@@ -34,7 +34,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <span className="text-xl font-bold text-gradient">Crypto Ninja</span>
+              <span className="text-xl font-bold text-gradient">ISHOWCRYPTO</span>
             </Link>
           </div>
 
@@ -50,7 +50,7 @@ const Navbar = () => {
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar>
                       <AvatarFallback className="bg-primary text-white">
-                        {user?.username.substring(0, 2).toUpperCase()}
+                        {user?.username?.substring(0, 2).toUpperCase() || "UN"}
                       </AvatarFallback>
                     </Avatar>
                   </Button>

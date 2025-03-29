@@ -284,7 +284,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (!storedVideos) {
           localStorage.setItem(VIDEOS_KEY, JSON.stringify(demoVideos));
-          setVideos(JSON.parse(storedVideos));
+          setVideos(demoVideos);
         } else {
           setVideos(JSON.parse(storedVideos));
         }
@@ -343,7 +343,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAirdrops(prev => [...prev, airdrop]);
     toast({
       title: "Airdrop added",
-      description: `"${airdrop.title}" has been added to your airdrops.",
+      description: `"${airdrop.title}" has been added to your airdrops.`,
     });
   };
 
@@ -382,7 +382,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTestnets(prev => [...prev, testnet]);
     toast({
       title: "Testnet added",
-      description: `"${testnet.title}" has been added to your testnets.",
+      description: `"${testnet.title}" has been added to your testnets.`,
     });
   };
 
@@ -444,7 +444,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTools(prev => [...prev, tool]);
     toast({
       title: "Tool added",
-      description: `"${tool.title}" has been added to your tools.",
+      description: `"${tool.title}" has been added to your tools.`,
     });
   };
 
@@ -483,7 +483,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setVideos(prev => [...prev, video]);
     toast({
       title: "Video added",
-      description: `"${video.title}" has been added to your videos.",
+      description: `"${video.title}" has been added to your videos.`,
     });
   };
 
