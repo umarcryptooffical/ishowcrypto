@@ -1,190 +1,114 @@
+import { createContext, useContext, useState, useEffect } from "react";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { toast } from '@/hooks/use-toast';
-
-type User = {
+// Define the User type with the password field
+interface User {
   id: string;
-  email: string;
   username: string;
-  canUploadVideos: boolean;
-};
+  email: string;
+  password?: string; // Make password optional so it can be removed after login
+  isAdmin?: boolean;
+}
 
-type AuthContextType = {
+interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string, inviteCode: string) => Promise<boolean>;
-  register: (email: string, username: string, password: string, inviteCode: string) => Promise<boolean>;
+  isLoading: boolean;
+  login: (email: string, password: string) => boolean;
   logout: () => void;
-};
+  register: (username: string, email: string, password: string) => boolean;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock database for demonstration
-const USERS_STORAGE_KEY = 'crypto_tracker_users';
-const CURRENT_USER_KEY = 'crypto_tracker_current_user';
-const INVITE_CODE = 'ishowcryptoairdrops';
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load user on initial mount
   useEffect(() => {
-    const storedUser = localStorage.getItem(CURRENT_USER_KEY);
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (e) {
-        console.error('Failed to parse stored user:', e);
-        localStorage.removeItem(CURRENT_USER_KEY);
-      }
+    const storedAuth = localStorage.getItem("auth");
+    if (storedAuth) {
+      const authData = JSON.parse(storedAuth);
+      setUser(authData.user);
+      setIsAuthenticated(authData.isAuthenticated);
     }
+    setIsLoading(false);
   }, []);
 
-  const getUsers = (): User[] => {
-    const users = localStorage.getItem(USERS_STORAGE_KEY);
-    return users ? JSON.parse(users) : [];
-  };
+  const users: User[] = [
+    {
+      id: "1",
+      username: "Demo User",
+      email: "demo@example.com",
+      password: "password",
+      isAdmin: false,
+    },
+    {
+      id: "2",
+      username: "Admin User",
+      email: "admin@example.com",
+      password: "adminpassword",
+      isAdmin: true,
+    },
+  ];
 
-  const saveUsers = (users: User[]) => {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-  };
-
-  const login = async (email: string, password: string, inviteCode: string): Promise<boolean> => {
-    // Validate invite code
-    if (inviteCode !== INVITE_CODE) {
-      toast({
-        title: "Invalid invite code",
-        description: "Please enter the correct invite code to access the platform.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    const users = getUsers();
-    const foundUser = users.find(u => u.email === email);
-
-    if (!foundUser) {
-      toast({
-        title: "User not found",
-        description: "No account found with this email. Please register first.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    // In a real app, we would hash the password and compare hashes
-    if (password !== foundUser.password) {
-      toast({
-        title: "Invalid credentials",
-        description: "The password you entered is incorrect.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    // Remove password from user object before storing in state
-    const { password: _, ...userWithoutPassword } = foundUser;
-    
-    setUser(userWithoutPassword);
-    setIsAuthenticated(true);
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
-    
-    toast({
-      title: "Welcome back!",
-      description: `You're now logged in as ${foundUser.username}`,
-    });
-    
-    return true;
-  };
-
-  const register = async (
-    email: string, 
-    username: string, 
-    password: string, 
-    inviteCode: string
-  ): Promise<boolean> => {
-    // Validate invite code
-    if (inviteCode !== INVITE_CODE) {
-      toast({
-        title: "Invalid invite code",
-        description: "Please enter the correct invite code to register.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    const users = getUsers();
-    
-    // Check if email is already registered
-    if (users.some(u => u.email === email)) {
-      toast({
-        title: "Email already registered",
-        description: "This email is already associated with an account.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    // Check if username is already taken
-    if (users.some(u => u.username === username)) {
-      toast({
-        title: "Username already taken",
-        description: "Please choose a different username.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    // Check for special user
-    const isSpecialUser = (
-      email === "malickirfan00@gmail.com" && 
-      password === "Irfan@123#13" && 
-      username === "UmarCryptospace"
+  const login = (email: string, password: string) => {
+    const user = users.find(
+      (user) => user.email === email && user.password === password
     );
+    
+    if (user) {
+      // After successful login, create a copy without the password
+      const userWithoutPassword = { ...user };
+      delete userWithoutPassword.password;
+      
+      setUser(userWithoutPassword);
+      setIsAuthenticated(true);
 
-    // Create new user
-    const newUser = {
-      id: Date.now().toString(),
-      email,
+      localStorage.setItem(
+        "auth",
+        JSON.stringify({
+          user: userWithoutPassword,
+          isAuthenticated: true,
+        })
+      );
+      return true;
+    }
+    
+    return false;
+  };
+
+  const register = (username: string, email: string, password: string) => {
+    const newUser: User = {
+      id: String(Date.now()),
       username,
-      password, // In a real app, we would hash this
-      canUploadVideos: isSpecialUser,
+      email,
+      password,
+      isAdmin: false,
     };
 
-    // Save to "database"
     users.push(newUser);
-    saveUsers(users);
-
-    // Log the user in
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-    setIsAuthenticated(true);
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithoutPassword));
-
-    toast({
-      title: "Registration successful!",
-      description: `Welcome to the platform, ${username}!`,
-    });
-
+    localStorage.setItem("users", JSON.stringify(users));
     return true;
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem(CURRENT_USER_KEY);
-    
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
-    });
+    localStorage.removeItem("auth");
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        isLoading,
+        login,
+        logout,
+        register,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -193,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

@@ -1,10 +1,9 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Rocket, Flask, CheckSquare, Clock, ArrowRight } from "lucide-react";
+import { Rocket, FlaskConical, CheckSquare, Clock, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
@@ -71,7 +70,7 @@ const Dashboard = () => {
               
               <Card className="bg-secondary/30 border-border/40">
                 <CardContent className="p-4 flex flex-col items-center">
-                  <Flask className="h-8 w-8 text-crypto-purple mb-2" />
+                  <FlaskConical className="h-8 w-8 text-crypto-purple mb-2" />
                   <h3 className="text-xl font-bold">{activeTestnets}</h3>
                   <p className="text-sm text-muted-foreground">Active Testnets</p>
                 </CardContent>

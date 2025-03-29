@@ -5,7 +5,7 @@ import {
   ChevronRight, 
   LayoutDashboard, 
   Rocket, 
-  Flask, 
+  FlaskConical, 
   Wrench, 
   Video
 } from "lucide-react";
@@ -23,7 +23,7 @@ const menuItems = [
     path: "/airdrops"
   },
   {
-    icon: Flask,
+    icon: FlaskConical,
     name: "Testnets",
     path: "/testnets"
   },
