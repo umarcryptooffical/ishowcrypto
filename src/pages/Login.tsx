@@ -35,14 +35,14 @@ const Login = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
-      // The login function expects only email and password
-      const success = await login(values.email, values.password);
+      const success = login(values.email, values.password, values.inviteCode);
+      
       if (success) {
         navigate("/dashboard");
       } else {
         toast({
           title: "Login failed",
-          description: "Invalid email or password. Please try again.",
+          description: "Invalid email, password, or invite code. Please try again.",
           variant: "destructive",
         });
       }

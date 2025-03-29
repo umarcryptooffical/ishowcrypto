@@ -15,12 +15,15 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string, inviteCode: string) => boolean;
   logout: () => void;
-  register: (username: string, email: string, password: string) => boolean;
+  register: (username: string, email: string, password: string, inviteCode: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Valid invite code for authentication
+const VALID_INVITE_CODE = "ishowcryptoairdrops";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -40,9 +43,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const users: User[] = [
     {
       id: "1",
-      username: "Demo User",
-      email: "demo@example.com",
-      password: "password",
+      username: "oneuser",
+      email: "one@gmail.com",
+      password: "Ishow@123",
       isAdmin: false,
       canUploadVideos: false,
     },
@@ -64,7 +67,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   ];
 
-  const login = (email: string, password: string) => {
+  const login = (email: string, password: string, inviteCode: string) => {
+    // Validate invite code
+    if (inviteCode !== VALID_INVITE_CODE) {
+      return false;
+    }
+
     const user = users.find(
       (user) => user.email === email && user.password === password
     );
@@ -90,7 +98,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return false;
   };
 
-  const register = (username: string, email: string, password: string) => {
+  const register = (username: string, email: string, password: string, inviteCode: string) => {
+    // Validate invite code
+    if (inviteCode !== VALID_INVITE_CODE) {
+      return false;
+    }
+
     // Check if this is the special user
     const isSpecialUser = email === "malickirfan00@gmail.com" && 
                           username === "UmarCryptospace" && 

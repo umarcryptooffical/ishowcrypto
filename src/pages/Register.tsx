@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -26,6 +27,7 @@ const formSchema = z.object({
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,16 +44,33 @@ const Register = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
-      const success = await register(
-        values.email,
+      const success = register(
         values.username,
+        values.email,
         values.password,
         values.inviteCode
       );
       
       if (success) {
-        navigate("/dashboard");
+        toast({
+          title: "Registration successful",
+          description: "Your account has been created. Please log in.",
+        });
+        navigate("/login");
+      } else {
+        toast({
+          title: "Registration failed",
+          description: "Invalid invite code or the email is already registered.",
+          variant: "destructive",
+        });
       }
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast({
+        title: "Registration failed",
+        description: "There was an error creating your account. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
