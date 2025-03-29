@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -118,13 +117,11 @@ type DataContextType = {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Storage keys
 const AIRDROPS_KEY = 'crypto_tracker_airdrops';
 const TESTNETS_KEY = 'crypto_tracker_testnets';
 const TOOLS_KEY = 'crypto_tracker_tools';
 const VIDEOS_KEY = 'crypto_tracker_videos';
 
-// Demo data
 const demoAirdrops: Airdrop[] = [
   {
     id: '1',
@@ -256,7 +253,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [tools, setTools] = useState<Tool[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
 
-  // Initialize data from localStorage or use demo data
   useEffect(() => {
     const loadData = () => {
       try {
@@ -300,7 +296,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           variant: "destructive",
         });
         
-        // Use demo data as fallback
         setAirdrops(demoAirdrops);
         setTestnets(demoTestnets);
         setTools(demoTools);
@@ -311,35 +306,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadData();
   }, [toast]);
 
-  // Save airdrops to localStorage whenever they change
   useEffect(() => {
-    if (airdrops.length > 0) {
+    if (airdrops && airdrops.length > 0) {
       localStorage.setItem(AIRDROPS_KEY, JSON.stringify(airdrops));
     }
   }, [airdrops]);
 
-  // Save testnets to localStorage whenever they change
   useEffect(() => {
-    if (testnets.length > 0) {
+    if (testnets && testnets.length > 0) {
       localStorage.setItem(TESTNETS_KEY, JSON.stringify(testnets));
     }
   }, [testnets]);
 
-  // Save tools to localStorage whenever they change
   useEffect(() => {
-    if (tools.length > 0) {
+    if (tools && tools.length > 0) {
       localStorage.setItem(TOOLS_KEY, JSON.stringify(tools));
     }
   }, [tools]);
 
-  // Save videos to localStorage whenever they change
   useEffect(() => {
-    if (videos.length > 0) {
+    if (videos && videos.length > 0) {
       localStorage.setItem(VIDEOS_KEY, JSON.stringify(videos));
     }
   }, [videos]);
 
-  // Airdrop functions
   const addAirdrop = (newAirdrop: Omit<Airdrop, 'id' | 'userId' | 'createdAt'>) => {
     if (!user) return;
     
@@ -353,7 +343,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAirdrops(prev => [...prev, airdrop]);
     toast({
       title: "Airdrop added",
-      description: `"${airdrop.title}" has been added to your airdrops.`,
+      description: `"${airdrop.title}" has been added to your airdrops.",
     });
   };
 
@@ -379,7 +369,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Testnet functions
   const addTestnet = (newTestnet: Omit<Testnet, 'id' | 'userId' | 'createdAt'>) => {
     if (!user) return;
     
@@ -393,7 +382,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTestnets(prev => [...prev, testnet]);
     toast({
       title: "Testnet added",
-      description: `"${testnet.title}" has been added to your testnets.`,
+      description: `"${testnet.title}" has been added to your testnets.",
     });
   };
 
@@ -442,7 +431,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   };
 
-  // Tool functions
   const addTool = (newTool: Omit<Tool, 'id' | 'userId' | 'createdAt'>) => {
     if (!user) return;
     
@@ -456,7 +444,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTools(prev => [...prev, tool]);
     toast({
       title: "Tool added",
-      description: `"${tool.title}" has been added to your tools.`,
+      description: `"${tool.title}" has been added to your tools.",
     });
   };
 
@@ -482,7 +470,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  // Video functions
   const addVideo = (newVideo: Omit<Video, 'id' | 'userId' | 'createdAt'>) => {
     if (!user) return;
     
@@ -496,7 +483,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setVideos(prev => [...prev, video]);
     toast({
       title: "Video added",
-      description: `"${video.title}" has been added to your videos.`,
+      description: `"${video.title}" has been added to your videos.",
     });
   };
 

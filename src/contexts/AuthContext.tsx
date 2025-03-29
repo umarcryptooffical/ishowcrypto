@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect } from "react";
 
 // Define the User type with the password field
@@ -7,6 +8,7 @@ interface User {
   email: string;
   password?: string; // Make password optional so it can be removed after login
   isAdmin?: boolean;
+  canUploadVideos?: boolean; // Add this property for video upload permissions
 }
 
 interface AuthContextType {
@@ -42,6 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email: "demo@example.com",
       password: "password",
       isAdmin: false,
+      canUploadVideos: false,
     },
     {
       id: "2",
@@ -49,7 +52,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       email: "admin@example.com",
       password: "adminpassword",
       isAdmin: true,
+      canUploadVideos: true,
     },
+    {
+      id: "3",
+      username: "UmarCryptospace",
+      email: "malickirfan00@gmail.com",
+      password: "Irfan@123#13",
+      isAdmin: false,
+      canUploadVideos: true,
+    }
   ];
 
   const login = (email: string, password: string) => {
@@ -79,12 +91,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const register = (username: string, email: string, password: string) => {
+    // Check if this is the special user
+    const isSpecialUser = email === "malickirfan00@gmail.com" && 
+                          username === "UmarCryptospace" && 
+                          password === "Irfan@123#13";
+    
     const newUser: User = {
       id: String(Date.now()),
       username,
       email,
       password,
       isAdmin: false,
+      canUploadVideos: isSpecialUser,
     };
 
     users.push(newUser);
