@@ -15,14 +15,14 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string, inviteCode: string) => boolean;
+  login: (email: string, password: string) => boolean;
   logout: () => void;
   register: (username: string, email: string, password: string, inviteCode: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Valid invite code for authentication
+// Valid invite code for authentication (only for registration)
 const VALID_INVITE_CODE = "ishowcryptoairdrops";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -67,12 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   ];
 
-  const login = (email: string, password: string, inviteCode: string) => {
-    // Validate invite code
-    if (inviteCode !== VALID_INVITE_CODE) {
-      return false;
-    }
-
+  const login = (email: string, password: string) => {
     const user = users.find(
       (user) => user.email === email && user.password === password
     );
@@ -99,7 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const register = (username: string, email: string, password: string, inviteCode: string) => {
-    // Validate invite code
+    // Validate invite code (still required for registration)
     if (inviteCode !== VALID_INVITE_CODE) {
       return false;
     }

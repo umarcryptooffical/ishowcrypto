@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Link, PinIcon, CheckCircle, ExternalLink } from "lucide-react";
+import { Plus, Edit, Trash2, Link as LinkIcon, PinIcon, CheckCircle, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const categories: AirdropCategory[] = [
   'Layer 1 & Testnet Mainnet',
@@ -35,6 +36,8 @@ const Airdrops = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [selectedTab, setSelectedTab] = useState<AirdropCategory | 'All'>('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [linksBatch, setLinksBatch] = useState('');
+  const [showBatchLinkInput, setShowBatchLinkInput] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState<Partial<Airdrop>>({
@@ -89,6 +92,8 @@ const Airdrops = () => {
     setNewLinkName('');
     setNewLinkUrl('');
     setCurrentAirdropId(null);
+    setLinksBatch('');
+    setShowBatchLinkInput(false);
   };
 
   const handleCreate = () => {
@@ -105,15 +110,27 @@ const Airdrops = () => {
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this airdrop?')) {
       deleteAirdrop(id);
+      toast({
+        title: "Airdrop deleted",
+        description: "The airdrop has been successfully deleted."
+      });
     }
   };
 
   const handleTogglePin = (id: string, isPinned: boolean) => {
     updateAirdrop(id, { isPinned: !isPinned });
+    toast({
+      title: isPinned ? "Airdrop unpinned" : "Airdrop pinned",
+      description: isPinned ? "The airdrop has been unpinned." : "The airdrop has been pinned to the top."
+    });
   };
 
   const handleToggleComplete = (id: string, isCompleted: boolean) => {
     updateAirdrop(id, { isCompleted: !isCompleted });
+    toast({
+      title: isCompleted ? "Airdrop marked as active" : "Airdrop marked as completed",
+      description: isCompleted ? "The airdrop is now active." : "The airdrop has been marked as completed."
+    });
   };
 
   const handleFormSubmit = () => {
@@ -128,9 +145,17 @@ const Airdrops = () => {
 
     if (isEditing && currentAirdropId) {
       updateAirdrop(currentAirdropId, formData);
+      toast({
+        title: "Airdrop updated",
+        description: "The airdrop has been successfully updated."
+      });
       setIsEditing(false);
     } else {
       addAirdrop(formData as Omit<Airdrop, 'id' | 'userId' | 'createdAt'>);
+      toast({
+        title: "Airdrop added",
+        description: "The new airdrop has been successfully added."
+      });
       setIsCreating(false);
     }
     
@@ -147,10 +172,10 @@ const Airdrops = () => {
       return;
     }
 
-    if (formData.links && formData.links.length >= 50) {
+    if (formData.links && formData.links.length >= 100) {
       toast({
         title: "Maximum links reached",
-        description: "You can add up to 50 links per airdrop.",
+        description: "You can add up to 100 links per airdrop.",
         variant: "destructive",
       });
       return;
@@ -160,7 +185,7 @@ const Airdrops = () => {
     const newLink: AirdropLink = {
       id: Date.now().toString(),
       name: newLinkName,
-      url: newLinkUrl,
+      url: newLinkUrl.startsWith('http') ? newLinkUrl : `https://${newLinkUrl}`,
     };
 
     setFormData(prev => ({
@@ -180,6 +205,73 @@ const Airdrops = () => {
     }));
   };
 
+  const processBatchLinks = () => {
+    if (!linksBatch.trim()) {
+      toast({
+        title: "No links provided",
+        description: "Please enter links to add in batch.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const currentLinksCount = formData.links?.length || 0;
+    const lines = linksBatch.trim().split('\n').filter(line => line.trim());
+    
+    if (currentLinksCount + lines.length > 100) {
+      toast({
+        title: "Too many links",
+        description: `You can add ${100 - currentLinksCount} more links (trying to add ${lines.length}).`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newLinks: AirdropLink[] = [];
+    
+    // Process each line
+    lines.forEach((line, index) => {
+      const parts = line.split('|');
+      let name, url;
+      
+      if (parts.length >= 2) {
+        // Format: Name | URL
+        name = parts[0].trim();
+        url = parts[1].trim();
+      } else {
+        // Just URL, use generic name
+        name = `Link ${currentLinksCount + index + 1}`;
+        url = line.trim();
+      }
+      
+      // Ensure URL has protocol
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = `https://${url}`;
+      }
+      
+      newLinks.push({
+        id: `batch-${Date.now()}-${index}`,
+        name,
+        url
+      });
+    });
+    
+    // Add all new links
+    setFormData(prev => ({
+      ...prev,
+      links: [...(prev.links || []), ...newLinks],
+    }));
+    
+    // Clear batch input
+    setLinksBatch('');
+    setShowBatchLinkInput(false);
+    
+    toast({
+      title: "Links added",
+      description: `Successfully added ${newLinks.length} links.`
+    });
+  };
+
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -193,7 +285,7 @@ const Airdrops = () => {
             className="sm:w-64"
           />
           
-          <Button onClick={handleCreate}>
+          <Button onClick={handleCreate} className="bg-crypto-green hover:bg-crypto-green/90">
             <Plus className="h-4 w-4 mr-2" />
             Add Airdrop
           </Button>
@@ -322,7 +414,7 @@ const Airdrops = () => {
           ) : (
             <div className="text-center py-10">
               <p className="text-muted-foreground mb-4">No airdrops found. Add your first one!</p>
-              <Button onClick={handleCreate}>
+              <Button onClick={handleCreate} className="bg-crypto-green hover:bg-crypto-green/90">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Airdrop
               </Button>
@@ -457,64 +549,104 @@ const Airdrops = () => {
             {/* Links Section */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <Label>Links</Label>
-                <span className="text-xs text-muted-foreground">
-                  {formData.links?.length || 0}/50 links
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-1">
-                  <Input
-                    placeholder="Link name"
-                    value={newLinkName}
-                    onChange={(e) => setNewLinkName(e.target.value)}
-                  />
-                </div>
-                
-                <div className="md:col-span-2 flex gap-2">
-                  <Input
-                    placeholder="URL"
-                    value={newLinkUrl}
-                    onChange={(e) => setNewLinkUrl(e.target.value)}
-                  />
-                  
+                <Label>Links ({formData.links?.length || 0}/100)</Label>
+                <div className="flex gap-2">
                   <Button 
                     type="button" 
-                    variant="secondary" 
-                    onClick={handleAddLink}
-                    disabled={(formData.links?.length || 0) >= 50}
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowBatchLinkInput(!showBatchLinkInput)}
                   >
-                    <Plus className="h-4 w-4" />
+                    {showBatchLinkInput ? "Hide Batch Input" : "Add Multiple Links"}
                   </Button>
                 </div>
               </div>
               
+              {showBatchLinkInput ? (
+                <div className="space-y-2">
+                  <Label>Add Multiple Links (one per line, format: "Name | URL" or just URL)</Label>
+                  <Textarea
+                    placeholder="Link 1 | https://example.com
+https://another-example.com
+Third Link | https://third-example.com"
+                    value={linksBatch}
+                    onChange={(e) => setLinksBatch(e.target.value)}
+                    rows={6}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="secondary" 
+                    onClick={processBatchLinks}
+                  >
+                    Add All Links
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-1">
+                    <Input
+                      placeholder="Link name"
+                      value={newLinkName}
+                      onChange={(e) => setNewLinkName(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2 flex gap-2">
+                    <Input
+                      placeholder="URL"
+                      value={newLinkUrl}
+                      onChange={(e) => setNewLinkUrl(e.target.value)}
+                    />
+                    
+                    <Button 
+                      type="button" 
+                      variant="secondary" 
+                      onClick={handleAddLink}
+                      disabled={(formData.links?.length || 0) >= 100}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
               {/* Link List */}
               {formData.links && formData.links.length > 0 && (
                 <div className="border rounded-md p-3">
-                  <p className="text-sm font-medium mb-2">Added Links</p>
-                  <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                    {formData.links.map(link => (
-                      <div key={link.id} className="flex items-center justify-between bg-secondary/50 rounded p-2">
-                        <div className="flex items-center">
-                          <Link className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <div className="truncate">
-                            <p className="text-sm font-medium truncate">{link.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{link.url}</p>
+                  <p className="text-sm font-medium mb-2">Added Links ({formData.links.length})</p>
+                  <ScrollArea className="max-h-64 overflow-y-auto pr-2">
+                    <div className="space-y-2">
+                      {formData.links.map(link => (
+                        <div key={link.id} className="flex items-center justify-between bg-secondary/50 rounded p-2">
+                          <div className="flex items-center overflow-hidden">
+                            <LinkIcon className="h-4 w-4 mr-2 flex-shrink-0 text-muted-foreground" />
+                            <div className="truncate">
+                              <p className="text-sm font-medium truncate">{link.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{link.url}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 ml-2">
+                            <a 
+                              href={link.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="h-6 w-6 flex items-center justify-center rounded hover:bg-background"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleRemoveLink(link.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => handleRemoveLink(link.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </div>
               )}
             </div>
@@ -528,7 +660,7 @@ const Airdrops = () => {
             }}>
               Cancel
             </Button>
-            <Button onClick={handleFormSubmit}>
+            <Button onClick={handleFormSubmit} className="bg-crypto-green hover:bg-crypto-green/90">
               {isEditing ? "Update Airdrop" : "Add Airdrop"}
             </Button>
           </DialogFooter>
