@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useData, AirdropCategory, Airdrop, AirdropLink } from "@/contexts/DataContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,33 +16,29 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-const categories: AirdropCategory[] = [
-  'Layer 1 & Testnet Mainnet',
-  'Telegram Bot Airdrops',
-  'Daily Check-in Airdrops',
-  'Twitter Airdrops',
-  'Social Airdrops',
-  'AI Airdrops',
-  'Wallet Airdrops',
-  'Exchange Airdrops',
-];
+import CategoryManager from "@/components/common/CategoryManager";
 
 const Airdrops = () => {
-  const { user } = useAuth();
+  const { user, getCategories } = useAuth();
   const { airdrops, addAirdrop, updateAirdrop, deleteAirdrop } = useData();
   
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [categories, setCategories] = useState<AirdropCategory[]>([]);
   const [selectedTab, setSelectedTab] = useState<AirdropCategory | 'All'>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [linksBatch, setLinksBatch] = useState('');
   const [showBatchLinkInput, setShowBatchLinkInput] = useState(false);
   
+  // Load categories
+  useEffect(() => {
+    setCategories(getCategories("airdrop"));
+  }, [getCategories]);
+  
   // Form state
   const [formData, setFormData] = useState<Partial<Airdrop>>({
     title: '',
-    category: 'Layer 1 & Testnet Mainnet',
+    category: '',
     description: '',
     links: [],
     fundingAmount: '',
@@ -79,7 +75,7 @@ const Airdrops = () => {
   const resetFormData = () => {
     setFormData({
       title: '',
-      category: 'Layer 1 & Testnet Mainnet',
+      category: categories.length > 0 ? categories[0] : '',
       description: '',
       links: [],
       fundingAmount: '',
@@ -289,6 +285,10 @@ const Airdrops = () => {
             <Plus className="h-4 w-4 mr-2" />
             Add Airdrop
           </Button>
+          
+          {user?.isAdmin && (
+            <CategoryManager type="airdrop" />
+          )}
         </div>
       </div>
 
@@ -457,7 +457,7 @@ const Airdrops = () => {
                 <Label htmlFor="category">Category *</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData({ ...formData, category: value as AirdropCategory })}
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />

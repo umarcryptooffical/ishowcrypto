@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Airdrops from "./pages/Airdrops";
+import AirdropRanking from "./pages/AirdropRanking";
 import Testnets from "./pages/Testnets";
 import Tools from "./pages/Tools";
 import Videos from "./pages/Videos";
@@ -41,6 +42,7 @@ const App = () => (
                 <Route element={<ProtectedRoute />}>
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="airdrops" element={<Airdrops />} />
+                  <Route path="airdrops-ranking" element={<AirdropRanking />} />
                   <Route path="testnets" element={<Testnets />} />
                   <Route path="tools" element={<Tools />} />
                 </Route>

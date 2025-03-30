@@ -1,35 +1,11 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-export type AirdropCategory = 
-  'Layer 1 & Testnet Mainnet' | 
-  'Telegram Bot Airdrops' | 
-  'Daily Check-in Airdrops' | 
-  'Twitter Airdrops' | 
-  'Social Airdrops' | 
-  'AI Airdrops' | 
-  'Wallet Airdrops' | 
-  'Exchange Airdrops';
-
-export type TestnetCategory = 
-  'Galxe Testnet' | 
-  'Bridge Mining' | 
-  'Mining Sessions';
-
-export type ToolCategory = 
-  'Wallet Connect' | 
-  'Airdrop Claim Checker' | 
-  'Gas Fee Calculator' | 
-  'Testnet Token Faucets' | 
-  'Crypto Wallet Extensions' | 
-  'Swaps & Bridges';
-
-export type VideoCategory = 
-  'Crypto Series' | 
-  'Top Testnets' | 
-  'Mining Projects';
+export type AirdropCategory = string;
+export type TestnetCategory = string;
+export type ToolCategory = string;
+export type VideoCategory = string;
 
 export type AirdropLink = {
   id: string;
@@ -49,6 +25,19 @@ export type Airdrop = {
   timeCommitment: string;
   workRequired: string;
   isCompleted: boolean;
+  isPinned: boolean;
+  createdAt: number;
+};
+
+export type AirdropRanking = {
+  id: string;
+  rank: number;
+  title: string;
+  description: string;
+  fundingAmount: string;
+  rewards: string;
+  rating: number; // 1-5 stars
+  detailsLink?: string;
   isPinned: boolean;
   createdAt: number;
 };
@@ -101,6 +90,7 @@ type DataContextType = {
   testnets: Testnet[];
   tools: Tool[];
   videos: Video[];
+  rankings: AirdropRanking[];
   addAirdrop: (airdrop: Omit<Airdrop, 'id' | 'userId' | 'createdAt'>) => void;
   updateAirdrop: (id: string, airdrop: Partial<Airdrop>) => void;
   deleteAirdrop: (id: string) => void;
@@ -114,6 +104,10 @@ type DataContextType = {
   addVideo: (video: Omit<Video, 'id' | 'userId' | 'createdAt'>) => void;
   updateVideo: (id: string, video: Partial<Video>) => void;
   deleteVideo: (id: string) => void;
+  addRanking: (ranking: Omit<AirdropRanking, 'id' | 'createdAt'>) => void;
+  updateRanking: (id: string, ranking: Partial<AirdropRanking>) => void;
+  deleteRanking: (id: string) => void;
+  refreshData: () => void;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -122,6 +116,8 @@ const AIRDROPS_KEY = 'crypto_tracker_airdrops';
 const TESTNETS_KEY = 'crypto_tracker_testnets';
 const TOOLS_KEY = 'crypto_tracker_tools';
 const VIDEOS_KEY = 'crypto_tracker_videos';
+const RANKINGS_KEY = 'crypto_tracker_rankings';
+const LAST_REFRESH_KEY = 'crypto_tracker_last_refresh';
 
 const demoAirdrops: Airdrop[] = [
   {
@@ -246,13 +242,42 @@ const demoVideos: Video[] = [
   },
 ];
 
+const demoRankings: AirdropRanking[] = [
+  {
+    id: '1',
+    rank: 1,
+    title: 'Arbitrum',
+    description: 'Ethereum Layer 2 scaling solution with strong ecosystem.',
+    fundingAmount: '$120M',
+    rewards: 'Up to 12,500 ARB tokens',
+    rating: 5,
+    detailsLink: 'https://arbitrum.io/',
+    isPinned: true,
+    createdAt: Date.now() - 86400000 * 2,
+  },
+  {
+    id: '2',
+    rank: 2,
+    title: 'LayerZero',
+    description: 'Cross-chain interoperability protocol.',
+    fundingAmount: '$85M',
+    rewards: 'Estimated 2000-5000 ZRO tokens',
+    rating: 4.5,
+    detailsLink: 'https://layerzero.network/',
+    isPinned: false,
+    createdAt: Date.now() - 86400000,
+  },
+];
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, awardAchievement } = useAuth();
   const { toast } = useToast();
   const [airdrops, setAirdrops] = useState<Airdrop[]>([]);
   const [testnets, setTestnets] = useState<Testnet[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [rankings, setRankings] = useState<AirdropRanking[]>([]);
+  const [lastRefresh, setLastRefresh] = useState<number>(0);
 
   useEffect(() => {
     const loadData = () => {
@@ -261,6 +286,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const storedTestnets = localStorage.getItem(TESTNETS_KEY);
         const storedTools = localStorage.getItem(TOOLS_KEY);
         const storedVideos = localStorage.getItem(VIDEOS_KEY);
+        const storedRankings = localStorage.getItem(RANKINGS_KEY);
+        const storedLastRefresh = localStorage.getItem(LAST_REFRESH_KEY);
 
         if (!storedAirdrops) {
           localStorage.setItem(AIRDROPS_KEY, JSON.stringify(demoAirdrops));
@@ -289,6 +316,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setVideos(JSON.parse(storedVideos));
         }
+
+        if (!storedRankings) {
+          localStorage.setItem(RANKINGS_KEY, JSON.stringify(demoRankings));
+          setRankings(demoRankings);
+        } else {
+          setRankings(JSON.parse(storedRankings));
+        }
+
+        if (storedLastRefresh) {
+          setLastRefresh(JSON.parse(storedLastRefresh));
+        } else {
+          const now = Date.now();
+          localStorage.setItem(LAST_REFRESH_KEY, JSON.stringify(now));
+          setLastRefresh(now);
+        }
       } catch (error) {
         console.error('Error loading data:', error);
         toast({
@@ -301,13 +343,31 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setTestnets(demoTestnets);
         setTools(demoTools);
         setVideos(demoVideos);
+        setRankings(demoRankings);
       }
     };
 
     loadData();
   }, [toast]);
 
-  // Fix localStorage save effects with null checks
+  useEffect(() => {
+    const now = Date.now();
+    const oneDayMs = 86400000; // 24 hours in ms
+    
+    if (now - lastRefresh > oneDayMs) {
+      refreshData();
+    }
+    
+    const checkInterval = setInterval(() => {
+      const currentTime = Date.now();
+      if (currentTime - lastRefresh > oneDayMs) {
+        refreshData();
+      }
+    }, 3600000); // Check every hour
+    
+    return () => clearInterval(checkInterval);
+  }, [lastRefresh]);
+
   useEffect(() => {
     if (airdrops && airdrops.length > 0) {
       localStorage.setItem(AIRDROPS_KEY, JSON.stringify(airdrops));
@@ -332,6 +392,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [videos]);
 
+  useEffect(() => {
+    if (rankings && rankings.length > 0) {
+      localStorage.setItem(RANKINGS_KEY, JSON.stringify(rankings));
+    }
+  }, [rankings]);
+
   const addAirdrop = (newAirdrop: Omit<Airdrop, 'id' | 'userId' | 'createdAt'>) => {
     if (!user) return;
     
@@ -345,7 +411,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAirdrops(prev => [...prev, airdrop]);
     toast({
       title: "Airdrop added",
-      description: `"${airdrop.title}" has been added to your airdrops.`,
+      description: `"${airdrop.title}" has been added to your airdrops.",
     });
   };
 
@@ -384,7 +450,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTestnets(prev => [...prev, testnet]);
     toast({
       title: "Testnet added",
-      description: `"${testnet.title}" has been added to your testnets.`,
+      description: `"${testnet.title}" has been added to your testnets.",
     });
   };
 
@@ -446,7 +512,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTools(prev => [...prev, tool]);
     toast({
       title: "Tool added",
-      description: `"${tool.title}" has been added to your tools.`,
+      description: `"${tool.title}" has been added to your tools.",
     });
   };
 
@@ -485,7 +551,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setVideos(prev => [...prev, video]);
     toast({
       title: "Video added",
-      description: `"${video.title}" has been added to your videos.`,
+      description: `"${video.title}" has been added to your videos.",
     });
   };
 
@@ -511,6 +577,132 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const addRanking = (newRanking: Omit<AirdropRanking, 'id' | 'createdAt'>) => {
+    if (!user?.isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Only admins can add rankings.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const ranking: AirdropRanking = {
+      ...newRanking,
+      id: Date.now().toString(),
+      createdAt: Date.now(),
+    };
+    
+    setRankings(prev => {
+      const updated = [...prev, ranking];
+      return updated.sort((a, b) => a.rank - b.rank);
+    });
+    
+    toast({
+      title: "Ranking added",
+      description: `"${ranking.title}" has been added to rankings.",
+    });
+  };
+
+  const updateRanking = (id: string, updatedFields: Partial<AirdropRanking>) => {
+    if (!user?.isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Only admins can update rankings.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setRankings(prev => {
+      const updated = prev.map(ranking => 
+        ranking.id === id 
+          ? { ...ranking, ...updatedFields } 
+          : ranking
+      );
+      return updated.sort((a, b) => a.rank - b.rank);
+    });
+    
+    toast({
+      title: "Ranking updated",
+      description: "Your changes have been saved.",
+    });
+  };
+
+  const deleteRanking = (id: string) => {
+    if (!user?.isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Only admins can delete rankings.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setRankings(prev => prev.filter(ranking => ranking.id !== id));
+    toast({
+      title: "Ranking deleted",
+      description: "The ranking has been removed.",
+    });
+  };
+
+  const refreshData = () => {
+    const now = Date.now();
+    setLastRefresh(now);
+    localStorage.setItem(LAST_REFRESH_KEY, JSON.stringify(now));
+    
+    setAirdrops(prev => prev.map(airdrop => {
+      if (!airdrop.isCompleted && (now - airdrop.createdAt > 3 * 86400000) && Math.random() > 0.7) {
+        const ranking = rankings.find(r => r.title === airdrop.title);
+        if (ranking) {
+          if (user && airdrop.userId === user.id) {
+            awardAchievement({
+              name: "Airdrop Completed",
+              description: `You completed the ${airdrop.title} airdrop`,
+              icon: "gift",
+            });
+          }
+          return { ...airdrop, isCompleted: true };
+        }
+      }
+      return airdrop;
+    }));
+    
+    setTestnets(prev => prev.map(testnet => {
+      if (!testnet.isCompleted) {
+        const progressIncrement = Math.floor(Math.random() * 20);
+        const newProgress = Math.min(100, testnet.progress + progressIncrement);
+        const isNowCompleted = newProgress === 100;
+        
+        if (isNowCompleted && user && testnet.userId === user.id) {
+          awardAchievement({
+            name: "Testnet Mastery",
+            description: `You completed the ${testnet.title} testnet`,
+            icon: "flask",
+          });
+        }
+        
+        const updatedTasks = testnet.tasks.map((task, index) => {
+          const shouldComplete = (index / testnet.tasks.length) * 100 < newProgress;
+          return shouldComplete ? { ...task, isCompleted: true } : task;
+        });
+        
+        return { 
+          ...testnet, 
+          progress: newProgress,
+          tasks: updatedTasks,
+          isCompleted: isNowCompleted
+        };
+      }
+      return testnet;
+    }));
+    
+    toast({
+      title: "Data refreshed",
+      description: "Your crypto data has been updated.",
+    });
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -518,6 +710,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         testnets,
         tools,
         videos,
+        rankings,
         addAirdrop,
         updateAirdrop,
         deleteAirdrop,
@@ -531,6 +724,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addVideo,
         updateVideo,
         deleteVideo,
+        addRanking,
+        updateRanking,
+        deleteRanking,
+        refreshData,
       }}
     >
       {children}

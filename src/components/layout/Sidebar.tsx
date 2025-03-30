@@ -7,41 +7,49 @@ import {
   Rocket, 
   FlaskConical, 
   Wrench, 
-  Video
+  Video,
+  Trophy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const menuItems = [
-  {
-    icon: LayoutDashboard,
-    name: "Dashboard",
-    path: "/dashboard"
-  },
-  {
-    icon: Rocket,
-    name: "Airdrops",
-    path: "/airdrops"
-  },
-  {
-    icon: FlaskConical,
-    name: "Testnets",
-    path: "/testnets"
-  },
-  {
-    icon: Wrench,
-    name: "Tools",
-    path: "/tools"
-  },
-  {
-    icon: Video,
-    name: "Videos",
-    path: "/videos"
-  }
-];
+import { useAuth } from "@/contexts/AuthContext";
 
 const Sidebar = () => {
+  const { user } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+
+  const menuItems = [
+    {
+      icon: LayoutDashboard,
+      name: "Dashboard",
+      path: "/dashboard"
+    },
+    {
+      icon: Rocket,
+      name: "Airdrops",
+      path: "/airdrops"
+    },
+    {
+      icon: Trophy,
+      name: "Rankings",
+      path: "/airdrops-ranking"
+    },
+    {
+      icon: FlaskConical,
+      name: "Testnets",
+      path: "/testnets"
+    },
+    {
+      icon: Wrench,
+      name: "Tools",
+      path: "/tools"
+    },
+    {
+      icon: Video,
+      name: "Videos",
+      path: "/videos"
+    }
+  ];
 
   return (
     <>
@@ -73,10 +81,43 @@ const Sidebar = () => {
                 )}
               >
                 <item.icon className="h-5 w-5" />
-                {!collapsed && <span className="ml-3">{item.name}</span>}
+                {!collapsed && (
+                  <span className="ml-3 flex items-center">
+                    {item.name}
+                    {item.name === "Dashboard" && user?.level && (
+                      <span className="ml-auto bg-crypto-green text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {user.level}
+                      </span>
+                    )}
+                  </span>
+                )}
+                {collapsed && user?.level && item.name === "Dashboard" && (
+                  <span className="absolute -right-1 -top-1 bg-crypto-green text-black text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {user.level}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>
+          
+          {!collapsed && user?.achievements && user.achievements.length > 0 && (
+            <div className="mt-8 border-t border-border/40 pt-4">
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Achievements</h3>
+              <div className="space-y-2">
+                {user.achievements.slice(0, 3).map((achievement) => (
+                  <div key={achievement.id} className="flex items-center bg-primary/5 p-2 rounded-md">
+                    <div className="h-6 w-6 bg-crypto-green/20 rounded-full flex items-center justify-center mr-2">
+                      <Trophy className="h-3 w-3 text-crypto-green" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{achievement.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{achievement.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -96,6 +137,11 @@ const Sidebar = () => {
             >
               <item.icon className="h-5 w-5" />
               <span className="text-xs mt-1">{item.name}</span>
+              {user?.level && item.name === "Dashboard" && (
+                <span className="absolute top-2 right-1/2 ml-5 bg-crypto-green text-black text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                  {user.level}
+                </span>
+              )}
             </Link>
           ))}
         </div>
