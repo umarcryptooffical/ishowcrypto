@@ -37,12 +37,12 @@ const App = () => (
                 <Route path="login" element={<Login />} />
                 <Route path="register" element={<Register />} />
                 <Route path="videos" element={<Videos />} />
+                <Route path="airdrops-ranking" element={<AirdropRanking />} />
                 
                 {/* Protected routes */}
                 <Route element={<ProtectedRoute />}>
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="airdrops" element={<Airdrops />} />
-                  <Route path="airdrops-ranking" element={<AirdropRanking />} />
                   <Route path="testnets" element={<Testnets />} />
                   <Route path="tools" element={<Tools />} />
                 </Route>

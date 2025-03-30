@@ -29,6 +29,9 @@ const Navbar = () => {
           <Link to="/videos" className="text-foreground/70 hover:text-foreground transition-colors">
             Videos
           </Link>
+          <Link to="/airdrops-ranking" className="text-foreground/70 hover:text-foreground transition-colors">
+            Rankings
+          </Link>
           {isAuthenticated ? (
             <>
               <Link to="/dashboard" className="text-foreground/70 hover:text-foreground transition-colors">
@@ -82,6 +85,9 @@ const Navbar = () => {
             </Link>
             <Link to="/videos" className="block py-2 text-foreground/70 hover:text-foreground">
               Videos
+            </Link>
+            <Link to="/airdrops-ranking" className="block py-2 text-foreground/70 hover:text-foreground">
+              Rankings
             </Link>
             {isAuthenticated ? (
               <>

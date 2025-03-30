@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowRight, Rocket, Shield, Coins, Zap } from "lucide-react";
+import { ArrowRight, Rocket, Shield, Coins, Zap, Trophy } from "lucide-react";
 
 const Index = () => {
   const { isAuthenticated } = useAuth();
@@ -36,9 +36,9 @@ const Index = () => {
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild>
-                  <Link to="/videos">
-                    Browse Videos
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                  <Link to="/airdrops-ranking">
+                    Browse Rankings
+                    <Trophy className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
               </>
@@ -79,11 +79,11 @@ const Index = () => {
             
             <div className="bg-card rounded-lg p-6 border border-border/40 hover:border-primary/50 transition-colors glow-effect">
               <div className="bg-primary/10 rounded-full w-12 h-12 flex items-center justify-center mb-4 mx-auto">
-                <Zap className="h-6 w-6 text-primary" />
+                <Trophy className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-xl font-medium mb-2">Video Tutorials</h3>
+              <h3 className="text-xl font-medium mb-2">Project Rankings</h3>
               <p className="text-muted-foreground">
-                Learn strategies and tips through our curated videos.
+                Discover top crypto projects ranked by potential.
               </p>
             </div>
           </div>
@@ -98,14 +98,24 @@ const Index = () => {
             Join our platform to track airdrops, testnets, and stay ahead in the crypto space.
           </p>
           
-          {!isAuthenticated && (
-            <Button size="lg" asChild>
-              <Link to="/register">
-                Get Started Now
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-          )}
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            {!isAuthenticated && (
+              <>
+                <Button size="lg" asChild>
+                  <Link to="/register">
+                    Get Started Now
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <Link to="/airdrops-ranking">
+                    View Rankings
+                    <Trophy className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </section>
     </div>

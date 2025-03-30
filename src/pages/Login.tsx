@@ -13,8 +13,14 @@ const Login = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mathAnswer, setMathAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Simple math challenge
+  const num1 = 5;
+  const num2 = 3;
+  const correctAnswer = num1 + num2;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +29,13 @@ const Login = () => {
 
     if (!email || !password) {
       setError("Please enter both email and password");
+      setLoading(false);
+      return;
+    }
+    
+    // Verify math challenge
+    if (parseInt(mathAnswer) !== correctAnswer) {
+      setError("Incorrect math answer. Please try again.");
       setLoading(false);
       return;
     }
@@ -82,6 +95,17 @@ const Login = () => {
                 placeholder="••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mathChallenge">Math Challenge: What is {num1} + {num2}?</Label>
+              <Input
+                id="mathChallenge"
+                type="number"
+                placeholder="Enter your answer"
+                value={mathAnswer}
+                onChange={(e) => setMathAnswer(e.target.value)}
                 required
               />
             </div>
