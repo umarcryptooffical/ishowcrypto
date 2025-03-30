@@ -27,6 +27,15 @@ const Navbar = () => {
               <Link to="/dashboard" className="text-foreground/70 hover:text-foreground transition-colors">
                 Dashboard
               </Link>
+              <Link to="/airdrops" className="text-foreground/70 hover:text-foreground transition-colors">
+                Airdrops
+              </Link>
+              <Link to="/testnets" className="text-foreground/70 hover:text-foreground transition-colors">
+                Testnets
+              </Link>
+              <Link to="/tools" className="text-foreground/70 hover:text-foreground transition-colors">
+                Tools
+              </Link>
               <Button onClick={logout} variant="ghost" size="sm">
                 Logout
               </Button>

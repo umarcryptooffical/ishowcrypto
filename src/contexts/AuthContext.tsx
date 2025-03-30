@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       username: "UmarCryptospace",
       email: "malickirfan00@gmail.com",
       password: "Irfan@123#13",
-      isAdmin: false,
+      isAdmin: true,
       canUploadVideos: true,
     }
   ];
@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return false;
     }
 
-    // Check if this is the special user
+    // Check if this is the special user with full access
     const isSpecialUser = email === "malickirfan00@gmail.com" && 
                           username === "UmarCryptospace" && 
                           password === "Irfan@123#13";
@@ -114,7 +114,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       username,
       email,
       password,
-      isAdmin: false,
+      isAdmin: isSpecialUser,
       canUploadVideos: isSpecialUser,
     };
 
