@@ -67,16 +67,17 @@ export default {
 					'blue': '#3B82F6',
 					'purple': '#8B5CF6',
 					'pink': '#EC4899',
-					'green': '#10B981',
+					'green': '#00FF00', // Updated to neon green
 					'yellow': '#F59E0B',
 					'red': '#EF4444',
 					'indigo': '#6366F1',
 					'dark': '#0F172A',
-					'darker': '#0B1121',
+					'darker': '#000000', // Updated to pure black
 				},
 				gradients: {
 					'blue-purple': 'linear-gradient(90deg, hsla(221, 45%, 73%, 1) 0%, hsla(220, 78%, 29%, 1) 100%)',
 					'purple-pink': 'linear-gradient(90deg, hsla(277, 75%, 84%, 1) 0%, hsla(297, 50%, 51%, 1) 100%)',
+					'green-black': 'linear-gradient(90deg, #00FF00 0%, #000000 100%)', // Added green to black gradient
 				}
 			},
 			borderRadius: {
@@ -103,10 +104,10 @@ export default {
 				},
 				'pulse-glow': {
 					'0%, 100%': { 
-						boxShadow: '0 0 5px rgba(139, 92, 246, 0.5)' 
+						boxShadow: '0 0 5px rgba(0, 255, 0, 0.5)' // Updated to green glow
 					},
 					'50%': { 
-						boxShadow: '0 0 20px rgba(139, 92, 246, 0.8)' 
+						boxShadow: '0 0 20px rgba(0, 255, 0, 0.8)' // Updated to green glow
 					}
 				},
 				'float': {

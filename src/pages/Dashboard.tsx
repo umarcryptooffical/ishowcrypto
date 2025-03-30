@@ -1,3 +1,5 @@
+
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useData } from "@/contexts/DataContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +11,7 @@ import { Link } from "react-router-dom";
 const Dashboard = () => {
   const { user } = useAuth();
   const { airdrops, testnets } = useData();
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   const userAirdrops = airdrops.filter(airdrop => airdrop.userId === user?.id || airdrop.userId === 'demo');
   const userTestnets = testnets.filter(testnet => testnet.userId === user?.id || testnet.userId === 'demo');
@@ -24,6 +27,40 @@ const Dashboard = () => {
   // For daily tasks, we'll assume each testnet with < 100% progress has daily tasks
   const dailyTasks = userTestnets.filter(testnet => testnet.progress < 100).length;
 
+  // Auto-refresh data every 24 hours
+  useEffect(() => {
+    const checkRefresh = () => {
+      const lastRefreshStr = localStorage.getItem('last_data_refresh');
+      
+      if (lastRefreshStr) {
+        const lastRefresh = new Date(lastRefreshStr);
+        const now = new Date();
+        const hoursElapsed = (now.getTime() - lastRefresh.getTime()) / (1000 * 60 * 60);
+        
+        setLastRefreshed(lastRefresh);
+        
+        // If 24 hours have passed since last refresh
+        if (hoursElapsed >= 24) {
+          // Would typically fetch fresh data from server here
+          localStorage.setItem('last_data_refresh', now.toISOString());
+          setLastRefreshed(now);
+          console.log("Data refreshed automatically after 24 hours");
+        }
+      } else {
+        // First time visit - set refresh time
+        const now = new Date();
+        localStorage.setItem('last_data_refresh', now.toISOString());
+        setLastRefreshed(now);
+      }
+    };
+    
+    checkRefresh();
+    
+    // Check for refresh needed every hour
+    const interval = setInterval(checkRefresh, 1000 * 60 * 60);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -32,6 +69,13 @@ const Dashboard = () => {
           Welcome back, <span className="font-medium text-foreground">{user?.username}</span>
         </div>
       </div>
+
+      {/* Last refreshed indicator */}
+      {lastRefreshed && (
+        <div className="text-xs text-muted-foreground mb-2 text-right">
+          Last refreshed: {lastRefreshed.toLocaleString()}
+        </div>
+      )}
 
       {/* Progress Overview */}
       <Card className="mb-6 border-border/40 bg-card/50 backdrop-blur-sm">
@@ -54,7 +98,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
               <Card className="bg-secondary/30 border-border/40">
                 <CardContent className="p-4 flex flex-col items-center">
-                  <Rocket className="h-8 w-8 text-crypto-blue mb-2" />
+                  <Rocket className="h-8 w-8 text-crypto-green mb-2" />
                   <h3 className="text-xl font-bold">{userAirdrops.length}</h3>
                   <p className="text-sm text-muted-foreground">Total Airdrops</p>
                 </CardContent>

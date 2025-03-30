@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -306,6 +307,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadData();
   }, [toast]);
 
+  // Fix localStorage save effects with null checks
   useEffect(() => {
     if (airdrops && airdrops.length > 0) {
       localStorage.setItem(AIRDROPS_KEY, JSON.stringify(airdrops));
