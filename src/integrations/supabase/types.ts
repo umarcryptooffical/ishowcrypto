@@ -165,6 +165,7 @@ export type Database = {
           id: string
           is_admin: boolean | null
           is_video_creator: boolean | null
+          level: number | null
           username: string
         }
         Insert: {
@@ -173,6 +174,7 @@ export type Database = {
           id: string
           is_admin?: boolean | null
           is_video_creator?: boolean | null
+          level?: number | null
           username: string
         }
         Update: {
@@ -181,6 +183,7 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           is_video_creator?: boolean | null
+          level?: number | null
           username?: string
         }
         Relationships: []
