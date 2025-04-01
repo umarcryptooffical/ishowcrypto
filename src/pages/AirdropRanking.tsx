@@ -1,7 +1,7 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useData, AirdropRanking } from "@/contexts/DataContext";
+import { useData } from "@/contexts/DataContext";
+import type { AirdropRanking as AirdropRankingType } from "@/contexts/DataContext";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,8 +21,7 @@ const AirdropRanking = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Form state
-  const [formData, setFormData] = useState<Partial<AirdropRanking>>({
+  const [formData, setFormData] = useState<Partial<AirdropRankingType>>({
     rank: 1,
     title: '',
     description: '',
@@ -34,13 +33,11 @@ const AirdropRanking = () => {
   });
   const [currentRankingId, setCurrentRankingId] = useState<string | null>(null);
 
-  // Filter rankings based on search
   const filteredRankings = rankings.filter(ranking => {
     return ranking.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
            ranking.description.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  // Sort rankings: pinned first, then by rank
   const sortedRankings = [...filteredRankings].sort((a, b) => {
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
@@ -69,7 +66,7 @@ const AirdropRanking = () => {
     resetFormData();
   };
 
-  const handleEdit = (ranking: AirdropRanking) => {
+  const handleEdit = (ranking: AirdropRankingType) => {
     if (!user?.isAdmin) {
       return;
     }
@@ -106,34 +103,30 @@ const AirdropRanking = () => {
       updateRanking(currentRankingId, formData);
       setIsEditing(false);
     } else {
-      addRanking(formData as Omit<AirdropRanking, 'id' | 'createdAt'>);
+      addRanking(formData as Omit<AirdropRankingType, 'id' | 'createdAt'>);
       setIsCreating(false);
     }
     
     resetFormData();
   };
 
-  // Render star rating
   const renderRating = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
     
-    // Add full stars
     for (let i = 0; i < fullStars; i++) {
       stars.push(
         <Star key={`star-${i}`} className="h-4 w-4 fill-crypto-yellow text-crypto-yellow" />
       );
     }
     
-    // Add half star if needed
     if (hasHalfStar) {
       stars.push(
         <StarHalf key="half-star" className="h-4 w-4 fill-crypto-yellow text-crypto-yellow" />
       );
     }
     
-    // Add empty stars
     const emptyStars = 5 - Math.ceil(rating);
     for (let i = 0; i < emptyStars; i++) {
       stars.push(
@@ -261,7 +254,6 @@ const AirdropRanking = () => {
         </div>
       )}
 
-      {/* Create/Edit Ranking Dialog */}
       <Dialog open={isCreating || isEditing} onOpenChange={(open) => {
         if (!open) {
           setIsCreating(false);

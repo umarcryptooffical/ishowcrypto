@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -145,9 +144,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   username: data.username,
                   email: data.email,
                   isAdmin: data.is_admin,
-                  canUploadVideos: data.can_upload_videos,
-                  level: data.level,
-                  achievements: [], // Would fetch from a separate table in a full implementation
+                  canUploadVideos: data.is_video_creator,
+                  level: data.level || 1,
+                  achievements: [],
                 };
                 setUser(profileUser);
               }
@@ -186,9 +185,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 username: data.username,
                 email: data.email,
                 isAdmin: data.is_admin,
-                canUploadVideos: data.can_upload_videos,
-                level: data.level,
-                achievements: [], // Would fetch from a separate table in a full implementation
+                canUploadVideos: data.is_video_creator,
+                level: data.level || 1,
+                achievements: [],
               };
               setUser(profileUser);
             }
