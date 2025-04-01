@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const Login = () => {
   const num2 = 3;
   const correctAnswer = num1 + num2;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -40,24 +41,24 @@ const Login = () => {
       return;
     }
 
-    const success = login(email, password);
+    try {
+      const success = await login(email, password);
 
-    if (success) {
-      toast({
-        title: "Login successful",
-        description: "Welcome back to ISHOWCRYPTO!",
-      });
-      navigate("/dashboard");
-    } else {
-      setError("Invalid email or password. Please try again.");
-      toast({
-        title: "Login failed",
-        description: "Invalid email or password. Please try again.",
-        variant: "destructive",
-      });
+      if (success) {
+        toast({
+          title: "Login successful",
+          description: "Welcome back to ISHOWCRYPTO!",
+        });
+        navigate("/dashboard");
+      } else {
+        setError("Invalid email or password. Please try again.");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -114,7 +115,14 @@ const Login = () => {
               className="w-full bg-crypto-green hover:bg-crypto-green/90 text-black font-semibold"
               disabled={loading}
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                "Login"
+              )}
             </Button>
           </form>
         </CardContent>

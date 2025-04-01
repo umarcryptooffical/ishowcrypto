@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -18,7 +19,7 @@ const formSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, { message: "Username can only contain letters, numbers, and underscores." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
   confirmPassword: z.string(),
-  inviteCode: z.string().min(1, { message: "Invite code is required." }),
+  inviteCode: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match.",
   path: ["confirmPassword"],
@@ -44,7 +45,7 @@ const Register = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
-      const success = register(
+      const success = await register(
         values.username,
         values.email,
         values.password,
@@ -54,21 +55,15 @@ const Register = () => {
       if (success) {
         toast({
           title: "Registration successful",
-          description: "Your account has been created. Please log in.",
+          description: "Your account has been created. Please check your email to verify.",
         });
         navigate("/login");
-      } else {
-        toast({
-          title: "Registration failed",
-          description: "Invalid invite code or the email is already registered.",
-          variant: "destructive",
-        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: "There was an error creating your account. Please try again.",
+        description: error.message || "There was an error creating your account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -150,9 +145,9 @@ const Register = () => {
                   name="inviteCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Invite Code</FormLabel>
+                      <FormLabel>Invite Code (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter invite code" {...field} />
+                        <Input placeholder="Enter invite code if you have one" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -160,7 +155,14 @@ const Register = () => {
                 />
                 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating Account..." : "Register"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    "Register"
+                  )}
                 </Button>
               </form>
             </Form>

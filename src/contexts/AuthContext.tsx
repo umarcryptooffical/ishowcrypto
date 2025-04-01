@@ -1,12 +1,14 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { User, Session } from "@supabase/supabase-js";
+import { toast } from "@/hooks/use-toast";
 
-// Define the User type with the password field and admin capabilities
-interface User {
+// Define the User type
+interface ProfileUser {
   id: string;
   username: string;
   email: string;
-  password?: string; // Make password optional so it can be removed after login
   isAdmin?: boolean;
   canUploadVideos?: boolean;
   level?: number;
@@ -22,12 +24,12 @@ export interface Achievement {
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: ProfileUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
-  register: (username: string, email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  register: (username: string, email: string, password: string, inviteCode?: string) => Promise<boolean>;
   addCategory: (type: "airdrop" | "testnet" | "tool" | "video", category: string) => boolean;
   getCategories: (type: "airdrop" | "testnet" | "tool" | "video") => string[];
   awardAchievement: (achievement: Omit<Achievement, "id" | "dateEarned">) => void;
@@ -75,9 +77,10 @@ const defaultVideoCategories = [
 ];
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<ProfileUser | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
   const [airdropCategories, setAirdropCategories] = useState<string[]>(defaultAirdropCategories);
   const [testnetCategories, setTestnetCategories] = useState<string[]>(defaultTestnetCategories);
   const [toolCategories, setToolCategories] = useState<string[]>(defaultToolCategories);
@@ -115,117 +118,174 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  // Initialize authentication state
   useEffect(() => {
-    const storedAuth = localStorage.getItem("auth");
-    if (storedAuth) {
-      const authData = JSON.parse(storedAuth);
-      setUser(authData.user);
-      setIsAuthenticated(authData.isAuthenticated);
-    }
-    setIsLoading(false);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        setSession(currentSession);
+        
+        if (currentSession?.user) {
+          setIsAuthenticated(true);
+          
+          // Fetch user profile
+          setTimeout(async () => {
+            try {
+              const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', currentSession.user.id)
+                .single();
+                
+              if (error) throw error;
+              
+              if (data) {
+                const profileUser: ProfileUser = {
+                  id: data.id,
+                  username: data.username,
+                  email: data.email,
+                  isAdmin: data.is_admin,
+                  canUploadVideos: data.can_upload_videos,
+                  level: data.level,
+                  achievements: [], // Would fetch from a separate table in a full implementation
+                };
+                setUser(profileUser);
+              }
+            } catch (error) {
+              console.error('Error fetching user profile:', error);
+            }
+          }, 0);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      
+      if (currentSession?.user) {
+        setIsAuthenticated(true);
+        // Fetch user profile
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', currentSession.user.id)
+          .single()
+          .then(({ data, error }) => {
+            if (error) {
+              console.error('Error fetching user profile:', error);
+              return;
+            }
+            
+            if (data) {
+              const profileUser: ProfileUser = {
+                id: data.id,
+                username: data.username,
+                email: data.email,
+                isAdmin: data.is_admin,
+                canUploadVideos: data.can_upload_videos,
+                level: data.level,
+                achievements: [], // Would fetch from a separate table in a full implementation
+              };
+              setUser(profileUser);
+            }
+          })
+          .finally(() => setIsLoading(false));
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const users: User[] = [
-    {
-      id: "1",
-      username: "oneuser",
-      email: "one@gmail.com",
-      password: "Ishow@123",
-      isAdmin: false,
-      canUploadVideos: false,
-      level: 1,
-      achievements: [],
-    },
-    {
-      id: "2",
-      username: "Admin User",
-      email: "admin@example.com",
-      password: "adminpassword",
-      isAdmin: true,
-      canUploadVideos: true,
-      level: 5,
-      achievements: [],
-    },
-    {
-      id: "3",
-      username: "UmarCryptospace",
-      email: "malickirfan00@gmail.com",
-      password: "Irfan@123#13",
-      isAdmin: true,
-      canUploadVideos: true,
-      level: 10,
-      achievements: [
-        {
-          id: "1",
-          name: "Crypto Master",
-          description: "Achieved the highest level in the system",
-          icon: "award",
-          dateEarned: Date.now(),
-        }
-      ],
-    }
-  ];
-
-  const login = (email: string, password: string) => {
-    const user = users.find(
-      (user) => user.email === email && user.password === password
-    );
-    
-    if (user) {
-      // After successful login, create a copy without the password
-      const userWithoutPassword = { ...user };
-      delete userWithoutPassword.password;
+  const login = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       
-      setUser(userWithoutPassword);
-      setIsAuthenticated(true);
-
-      localStorage.setItem(
-        "auth",
-        JSON.stringify({
-          user: userWithoutPassword,
-          isAuthenticated: true,
-        })
-      );
+      if (error) {
+        toast({
+          title: "Login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
       return true;
+    } catch (error) {
+      console.error("Login error:", error);
+      return false;
     }
-    
-    return false;
   };
 
-  const register = (username: string, email: string, password: string) => {
-    // Check if this is the special user with full access
-    const isSpecialUser = email === "malickirfan00@gmail.com" && 
-                          username === "UmarCryptospace" && 
-                          password === "Irfan@123#13";
-    
-    const newUser: User = {
-      id: String(Date.now()),
-      username,
-      email,
-      password,
-      isAdmin: isSpecialUser,
-      canUploadVideos: isSpecialUser,
-      level: isSpecialUser ? 10 : 1,
-      achievements: isSpecialUser ? [
-        {
-          id: "1",
-          name: "Crypto Master",
-          description: "Achieved the highest level in the system",
-          icon: "award",
-          dateEarned: Date.now(),
-        }
-      ] : [],
-    };
-
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
-    return true;
+  const register = async (username: string, email: string, password: string, inviteCode?: string) => {
+    try {
+      // Check if invite code is correct for special users
+      const isSpecialUser = email === "malickirfan00@gmail.com" && 
+                            username === "UmarCryptospace" && 
+                            inviteCode === "Irfan@123#13";
+                            
+      // For this implementation, we'll use the inviteCode check just for the special user
+      if (email === "malickirfan00@gmail.com" && !isSpecialUser) {
+        toast({
+          title: "Registration failed",
+          description: "Invalid invite code for this account.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      // Regular registration logic
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+          },
+        },
+      });
+      
+      if (error) {
+        toast({
+          title: "Registration failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
+      toast({
+        title: "Registration successful",
+        description: "Please check your email to verify your account.",
+      });
+      
+      return true;
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      toast({
+        title: "Registration failed",
+        description: error.message || "An error occurred during registration",
+        variant: "destructive",
+      });
+      return false;
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem("auth");
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const addCategory = (type: "airdrop" | "testnet" | "tool" | "video", category: string) => {
@@ -295,14 +355,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
     
     setUser(updatedUser);
-    
-    localStorage.setItem(
-      "auth",
-      JSON.stringify({
-        user: updatedUser,
-        isAuthenticated: true,
-      })
-    );
   };
 
   return (
