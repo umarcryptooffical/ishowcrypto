@@ -140,6 +140,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               if (error) throw error;
               
               if (data) {
+                // Special handling for the admin user
+                const isSpecialUser = data.email === "malickirfan00@gmail.com" && 
+                                     data.username === "UmarCryptospace";
+
+                // If it's our special user, make sure they have admin privileges
+                if (isSpecialUser && (!data.is_admin || !data.is_video_creator)) {
+                  // Update their privileges in the database
+                  const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ 
+                      is_admin: true, 
+                      is_video_creator: true,
+                      level: Math.max(data.level || 1, 10) // Give them a high level
+                    })
+                    .eq('id', currentSession.user.id);
+                  
+                  if (updateError) {
+                    console.error("Error updating admin privileges:", updateError);
+                  } else {
+                    data.is_admin = true;
+                    data.is_video_creator = true;
+                    data.level = Math.max(data.level || 1, 10);
+                  }
+                }
+                
                 const profileUser: ProfileUser = {
                   id: data.id,
                   username: data.username,
@@ -151,13 +176,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 };
                 setUser(profileUser);
               }
+              setIsLoading(false);
             } catch (error) {
               console.error('Error fetching user profile:', error);
+              setIsLoading(false);
             }
           }, 0);
         } else {
           setUser(null);
           setIsAuthenticated(false);
+          setIsLoading(false);
         }
       }
     );
@@ -182,6 +210,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
             
             if (data) {
+              // Special handling for the admin user
+              const isSpecialUser = data.email === "malickirfan00@gmail.com" && 
+                                   data.username === "UmarCryptospace";
+
+              // If it's our special user, make sure they have admin privileges
+              if (isSpecialUser && (!data.is_admin || !data.is_video_creator)) {
+                // Update their privileges in the database
+                supabase
+                  .from('profiles')
+                  .update({ 
+                    is_admin: true, 
+                    is_video_creator: true,
+                    level: Math.max(data.level || 1, 10) // Give them a high level
+                  })
+                  .eq('id', currentSession.user.id)
+                  .then(({ error: updateError }) => {
+                    if (updateError) {
+                      console.error("Error updating admin privileges:", updateError);
+                    } else {
+                      data.is_admin = true;
+                      data.is_video_creator = true;
+                      data.level = Math.max(data.level || 1, 10);
+                    }
+                  });
+              }
+              
               const profileUser: ProfileUser = {
                 id: data.id,
                 username: data.username,
@@ -202,6 +256,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         setIsLoading(false);
       }
+    }).catch(err => {
+      console.error('Error getting session:', err);
+      setIsLoading(false);
     });
 
     return () => {
@@ -231,7 +288,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (username: string, email: string, password: string, inviteCode?: string) => {
     try {
-      // Check if invite code is correct for special users
+      // Special handling for the admin user
       const isSpecialUser = email === "malickirfan00@gmail.com" && 
                             username === "UmarCryptospace" && 
                             inviteCode === "Irfan@123#13";
@@ -253,6 +310,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         options: {
           data: {
             username,
+            // Set admin flag for the special user
+            is_admin: isSpecialUser,
+            is_video_creator: isSpecialUser,
           },
         },
       });
@@ -266,10 +326,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       }
       
-      toast({
-        title: "Registration successful",
-        description: "Please check your email to verify your account.",
-      });
+      // If it's the special user, update the profile directly
+      if (isSpecialUser) {
+        toast({
+          title: "Admin Registration successful",
+          description: "Welcome, Admin! You have full access to the platform.",
+        });
+      } else {
+        toast({
+          title: "Registration successful",
+          description: "Please check your email to verify your account.",
+        });
+      }
       
       return true;
     } catch (error: any) {
