@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -75,6 +74,9 @@ const defaultVideoCategories = [
   'Top Testnets',
   'Mining Projects',
 ];
+
+// Define valid invite codes
+const VALID_INVITE_CODES = ["ishowcryptoairdrops", "Irfan@123#13"];
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<ProfileUser | null>(null);
@@ -248,17 +250,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               setUser(profileUser);
             }
             setIsLoading(false);
-          })
-          .catch(err => {
-            console.error('Error in profile fetch promise:', err);
-            setIsLoading(false);
           });
       } else {
         setIsLoading(false);
       }
-    }).catch(err => {
-      console.error('Error getting session:', err);
-      setIsLoading(false);
     });
 
     return () => {
@@ -288,16 +283,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const register = async (username: string, email: string, password: string, inviteCode?: string) => {
     try {
-      // Special handling for the admin user
+      // Check if invite code is valid or if it's the special admin user
       const isSpecialUser = email === "malickirfan00@gmail.com" && 
                             username === "UmarCryptospace" && 
                             inviteCode === "Irfan@123#13";
-                            
-      // For this implementation, we'll use the inviteCode check just for the special user
-      if (email === "malickirfan00@gmail.com" && !isSpecialUser) {
+      
+      // Validate invite code
+      if (!isSpecialUser && (!inviteCode || !VALID_INVITE_CODES.includes(inviteCode))) {
         toast({
           title: "Registration failed",
-          description: "Invalid invite code for this account.",
+          description: "Invalid invite code. Please use a valid invite code.",
           variant: "destructive",
         });
         return false;

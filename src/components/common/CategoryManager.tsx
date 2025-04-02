@@ -114,7 +114,7 @@ const CategoryManager = ({ type, buttonVariant = "outline", buttonSize = "sm" }:
     }
   };
   
-  // Only admins can manage categories
+  // Return nothing if the user is not an admin
   if (!user?.isAdmin) {
     return null;
   }

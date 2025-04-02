@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -19,7 +20,7 @@ const formSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, { message: "Username can only contain letters, numbers, and underscores." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
   confirmPassword: z.string(),
-  inviteCode: z.string().optional(),
+  inviteCode: z.string().min(1, { message: "Invite code is required." }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match.",
   path: ["confirmPassword"],
@@ -30,6 +31,7 @@ const Register = () => {
   const { register } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -44,6 +46,8 @@ const Register = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
+    setError(null);
+
     try {
       const success = await register(
         values.username,
@@ -58,9 +62,12 @@ const Register = () => {
           description: "Your account has been created. Please check your email to verify.",
         });
         navigate("/login");
+      } else {
+        setError("Registration failed. Please check your invite code or try again later.");
       }
     } catch (error: any) {
       console.error("Registration error:", error);
+      setError(error.message || "There was an error creating your account. Please try again.");
       toast({
         title: "Registration failed",
         description: error.message || "There was an error creating your account. Please try again.",
@@ -82,6 +89,12 @@ const Register = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -145,9 +158,9 @@ const Register = () => {
                   name="inviteCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Invite Code (Optional)</FormLabel>
+                      <FormLabel>Invite Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter invite code if you have one" {...field} />
+                        <Input placeholder="Enter invite code" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
