@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Settings, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CategoryManagerProps {
   type: "airdrop" | "testnet" | "tool" | "video";
@@ -16,10 +17,11 @@ interface CategoryManagerProps {
 }
 
 const CategoryManager = ({ type, buttonVariant = "outline", buttonSize = "sm" }: CategoryManagerProps) => {
-  const { user, addCategory, getCategories } = useAuth();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   const typeLabel = {
     airdrop: "Airdrop",
@@ -28,12 +30,41 @@ const CategoryManager = ({ type, buttonVariant = "outline", buttonSize = "sm" }:
     video: "Video"
   }[type];
   
-  const handleOpen = () => {
-    setCategories(getCategories(type));
+  const tableMap = {
+    airdrop: "airdrop_categories",
+    testnet: "testnet_categories",
+    tool: "tool_categories",
+    video: "video_categories"
+  };
+  
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from(tableMap[type])
+        .select('name')
+        .order('name');
+        
+      if (error) throw error;
+      
+      setCategories(data.map(item => item.name));
+    } catch (error: any) {
+      console.error(`Error fetching ${type} categories:`, error);
+      toast({
+        title: "Error",
+        description: `Failed to load ${type} categories: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleOpen = async () => {
+    setIsLoading(true);
+    await fetchCategories();
+    setIsLoading(false);
     setOpen(true);
   };
   
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (!newCategory.trim()) {
       toast({
         title: "Error",
@@ -52,21 +83,34 @@ const CategoryManager = ({ type, buttonVariant = "outline", buttonSize = "sm" }:
       return;
     }
     
-    const success = addCategory(type, newCategory.trim());
+    setIsLoading(true);
     
-    if (success) {
-      setCategories(getCategories(type));
+    try {
+      const { error } = await supabase
+        .from(tableMap[type])
+        .insert({
+          name: newCategory.trim(),
+          user_id: user?.id
+        });
+        
+      if (error) throw error;
+      
+      await fetchCategories();
       setNewCategory("");
+      
       toast({
         title: "Success",
         description: `New ${typeLabel.toLowerCase()} category added`,
       });
-    } else {
+    } catch (error: any) {
+      console.error(`Error adding ${type} category:`, error);
       toast({
         title: "Error",
-        description: "You don't have permission to add categories",
+        description: `Failed to add category: ${error.message}`,
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -99,11 +143,13 @@ const CategoryManager = ({ type, buttonVariant = "outline", buttonSize = "sm" }:
                   handleAddCategory();
                 }
               }}
+              disabled={isLoading}
             />
             <Button 
               variant="default" 
               className="bg-crypto-green hover:bg-crypto-green/90"
               onClick={handleAddCategory}
+              disabled={isLoading}
             >
               <Plus className="h-4 w-4" />
             </Button>
@@ -112,21 +158,25 @@ const CategoryManager = ({ type, buttonVariant = "outline", buttonSize = "sm" }:
           <div>
             <h4 className="mb-2 text-sm font-medium">Current Categories</h4>
             <ScrollArea className="h-[200px] rounded-md border p-2">
-              <div className="flex flex-wrap gap-2">
-                {categories.map(category => (
-                  <Badge
-                    key={category}
-                    variant="secondary"
-                    className="flex items-center bg-crypto-darker"
-                  >
-                    {category}
-                  </Badge>
-                ))}
-                
-                {categories.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No categories found.</p>
-                )}
-              </div>
+              {isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading categories...</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {categories.map(category => (
+                    <Badge
+                      key={category}
+                      variant="secondary"
+                      className="flex items-center bg-crypto-darker"
+                    >
+                      {category}
+                    </Badge>
+                  ))}
+                  
+                  {categories.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No categories found.</p>
+                  )}
+                </div>
+              )}
             </ScrollArea>
           </div>
         </div>

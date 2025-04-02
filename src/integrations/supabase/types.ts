@@ -79,6 +79,7 @@ export type Database = {
           difficulty: string | null
           id: string
           is_completed: boolean | null
+          is_paid: boolean | null
           is_pinned: boolean | null
           logo_url: string | null
           name: string
@@ -94,6 +95,7 @@ export type Database = {
           difficulty?: string | null
           id?: string
           is_completed?: boolean | null
+          is_paid?: boolean | null
           is_pinned?: boolean | null
           logo_url?: string | null
           name: string
@@ -109,6 +111,7 @@ export type Database = {
           difficulty?: string | null
           id?: string
           is_completed?: boolean | null
+          is_paid?: boolean | null
           is_pinned?: boolean | null
           logo_url?: string | null
           name?: string
@@ -188,6 +191,117 @@ export type Database = {
         }
         Relationships: []
       }
+      rankings: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          details_link: string | null
+          funding_amount: string | null
+          id: string
+          is_paid: boolean | null
+          is_pinned: boolean | null
+          rank: number
+          rating: number | null
+          rewards: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          details_link?: string | null
+          funding_amount?: string | null
+          id?: string
+          is_paid?: boolean | null
+          is_pinned?: boolean | null
+          rank: number
+          rating?: number | null
+          rewards?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          details_link?: string | null
+          funding_amount?: string | null
+          id?: string
+          is_paid?: boolean | null
+          is_pinned?: boolean | null
+          rank?: number
+          rating?: number | null
+          rewards?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      testnet_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      testnets: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          difficulty: string | null
+          id: string
+          is_completed: boolean | null
+          is_paid: boolean | null
+          is_pinned: boolean | null
+          logo_url: string | null
+          name: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          is_completed?: boolean | null
+          is_paid?: boolean | null
+          is_pinned?: boolean | null
+          logo_url?: string | null
+          name: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          is_completed?: boolean | null
+          is_paid?: boolean | null
+          is_pinned?: boolean | null
+          logo_url?: string | null
+          name?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tool_categories: {
         Row: {
           created_at: string | null
@@ -217,6 +331,7 @@ export type Database = {
           difficulty: string | null
           id: string
           is_completed: boolean | null
+          is_paid: boolean | null
           is_pinned: boolean | null
           logo_url: string | null
           name: string
@@ -230,6 +345,7 @@ export type Database = {
           difficulty?: string | null
           id?: string
           is_completed?: boolean | null
+          is_paid?: boolean | null
           is_pinned?: boolean | null
           logo_url?: string | null
           name: string
@@ -243,11 +359,72 @@ export type Database = {
           difficulty?: string | null
           id?: string
           is_completed?: boolean | null
+          is_paid?: boolean | null
           is_pinned?: boolean | null
           logo_url?: string | null
           name?: string
           url?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      video_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_paid: boolean | null
+          is_pinned: boolean | null
+          thumbnail_url: string | null
+          title: string
+          user_id: string
+          video_url: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_paid?: boolean | null
+          is_pinned?: boolean | null
+          thumbnail_url?: string | null
+          title: string
+          user_id: string
+          video_url: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_paid?: boolean | null
+          is_pinned?: boolean | null
+          thumbnail_url?: string | null
+          title?: string
+          user_id?: string
+          video_url?: string
         }
         Relationships: []
       }
