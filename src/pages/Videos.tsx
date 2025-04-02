@@ -16,12 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-
-const categories: VideoCategory[] = [
-  'Crypto Series',
-  'Top Testnets',
-  'Mining Projects',
-];
+import CategoryManager from "@/components/common/CategoryManager";
 
 const Videos = () => {
   const { user, isAuthenticated } = useAuth();
@@ -40,11 +35,12 @@ const Videos = () => {
     thumbnailUrl: '',
     videoUrl: '',
     isPinned: false,
+    isPaid: false,
   });
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
 
   // Check if user can upload videos (UmarCryptospace user or demo)
-  const canUploadVideos = user?.canUploadVideos || false;
+  const canUploadVideos = user?.canUploadVideos || user?.isAdmin;
 
   // Get videos - all videos are public
   const filteredVideos = videos.filter(video => {
@@ -69,6 +65,7 @@ const Videos = () => {
       thumbnailUrl: '',
       videoUrl: '',
       isPinned: false,
+      isPaid: false,
     });
     setCurrentVideoId(null);
   };
@@ -88,8 +85,8 @@ const Videos = () => {
   };
 
   const handleEdit = (video: any) => {
-    // Only allow editing if user owns the video or has upload permission
-    if (video.userId !== user?.id && !canUploadVideos) {
+    // Only allow editing if user owns the video or has admin permission
+    if (video.userId !== user?.id && !user?.isAdmin) {
       toast({
         title: "Permission denied",
         description: "You can only edit your own videos.",
@@ -105,14 +102,15 @@ const Videos = () => {
       thumbnailUrl: video.thumbnailUrl,
       videoUrl: video.videoUrl,
       isPinned: video.isPinned,
+      isPaid: video.isPaid || false,
     });
     setCurrentVideoId(video.id);
     setIsEditing(true);
   };
 
   const handleDelete = (id: string, userId: string) => {
-    // Only allow deletion if user owns the video or has upload permission
-    if (userId !== user?.id && !canUploadVideos) {
+    // Only allow deletion if user owns the video or has admin permission
+    if (userId !== user?.id && !user?.isAdmin) {
       toast({
         title: "Permission denied",
         description: "You can only delete your own videos.",
@@ -127,8 +125,8 @@ const Videos = () => {
   };
 
   const handleTogglePin = (id: string, isPinned: boolean, userId: string) => {
-    // Only allow pinning if user owns the video or has upload permission
-    if (userId !== user?.id && !canUploadVideos) {
+    // Only allow pinning if user owns the video or has admin permission
+    if (userId !== user?.id && !user?.isAdmin) {
       toast({
         title: "Permission denied",
         description: "You can only pin your own videos.",
@@ -224,12 +222,16 @@ const Videos = () => {
             className="sm:w-64"
           />
           
-          {isAuthenticated && (
-            <Button onClick={handleCreate} disabled={!canUploadVideos}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Video
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {user?.isAdmin && <CategoryManager type="video" />}
+            
+            {isAuthenticated && (
+              <Button onClick={handleCreate} disabled={!canUploadVideos}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Video
+              </Button>
+            )}
+          </div>
         </div>
       </div>
       
@@ -245,7 +247,7 @@ const Videos = () => {
       <Tabs defaultValue="All" value={selectedTab} onValueChange={(value) => setSelectedTab(value as VideoCategory | 'All')}>
         <TabsList className="mb-4 flex w-full overflow-x-auto">
           <TabsTrigger value="All">All</TabsTrigger>
-          {categories.map(category => (
+          {['Crypto Series', 'Top Testnets', 'Mining Projects'].map(category => (
             <TabsTrigger key={category} value={category}>
               {category}
             </TabsTrigger>
@@ -258,7 +260,8 @@ const Videos = () => {
               {sortedVideos.map(video => (
                 <Card key={video.id} className={cn(
                   "border-border/40 transition-all hover:border-primary/30 overflow-hidden",
-                  video.isPinned && "border-l-4 border-l-crypto-yellow"
+                  video.isPinned && "border-l-4 border-l-crypto-yellow",
+                  video.isPaid && "border-t-4 border-t-crypto-green"
                 )}>
                   <div className="relative aspect-video bg-muted/30">
                     <img 
@@ -279,12 +282,17 @@ const Videos = () => {
                         <Play className="h-8 w-8 text-white" />
                       </div>
                     </a>
+                    {video.isPaid && (
+                      <div className="absolute top-2 right-2 bg-crypto-green text-white text-xs font-bold px-2 py-1 rounded">
+                        PAID
+                      </div>
+                    )}
                   </div>
                   
                   <CardHeader className="pb-2">
                     <div className="flex justify-between">
                       <Badge variant="outline">{video.category}</Badge>
-                      {isAuthenticated && (video.userId === user?.id || canUploadVideos) && (
+                      {isAuthenticated && (video.userId === user?.id || user?.isAdmin) && (
                         <Button 
                           variant="ghost" 
                           size="icon" 
@@ -310,7 +318,7 @@ const Videos = () => {
                       <ExternalLink className="h-3 w-3 ml-1" />
                     </a>
                     
-                    {isAuthenticated && (video.userId === user?.id || canUploadVideos) && (
+                    {isAuthenticated && (video.userId === user?.id || user?.isAdmin) && (
                       <div className="flex space-x-2">
                         <Button
                           variant="ghost"
@@ -388,7 +396,7 @@ const Videos = () => {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(category => (
+                  {['Crypto Series', 'Top Testnets', 'Mining Projects'].map(category => (
                     <SelectItem key={category} value={category}>
                       {category}
                     </SelectItem>
@@ -437,6 +445,15 @@ const Videos = () => {
                 onCheckedChange={(checked) => setFormData({ ...formData, isPinned: checked })}
               />
               <Label htmlFor="isPinned">Pin to top</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isPaid"
+                checked={formData.isPaid}
+                onCheckedChange={(checked) => setFormData({ ...formData, isPaid: checked })}
+              />
+              <Label htmlFor="isPaid">Paid content</Label>
             </div>
           </div>
           

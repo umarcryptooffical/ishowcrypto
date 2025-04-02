@@ -16,3 +16,17 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage
   }
 });
+
+// Type-safe table names for use in queries
+export const TABLES = {
+  PROFILES: 'profiles',
+  AIRDROPS: 'airdrops',
+  TESTNETS: 'testnets',
+  TOOLS: 'tools',
+  VIDEOS: 'videos',
+  RANKINGS: 'rankings',
+  AIRDROP_CATEGORIES: 'airdrop_categories',
+  TESTNET_CATEGORIES: 'testnet_categories',
+  TOOL_CATEGORIES: 'tool_categories',
+  VIDEO_CATEGORIES: 'video_categories',
+} as const;

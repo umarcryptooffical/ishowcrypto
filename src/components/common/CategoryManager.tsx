@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Settings, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, TABLES } from "@/integrations/supabase/client";
 
 interface CategoryManagerProps {
   type: "airdrop" | "testnet" | "tool" | "video";
@@ -31,11 +31,11 @@ const CategoryManager = ({ type, buttonVariant = "outline", buttonSize = "sm" }:
   }[type];
   
   const tableMap = {
-    airdrop: "airdrop_categories",
-    testnet: "testnet_categories",
-    tool: "tool_categories",
-    video: "video_categories"
-  };
+    airdrop: TABLES.AIRDROP_CATEGORIES,
+    testnet: TABLES.TESTNET_CATEGORIES,
+    tool: TABLES.TOOL_CATEGORIES,
+    video: TABLES.VIDEO_CATEGORIES,
+  } as const;
   
   const fetchCategories = async () => {
     try {

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import CategoryManager from "@/components/common/CategoryManager";
 
 const AirdropRanking = () => {
   const { user } = useAuth();
@@ -30,6 +31,7 @@ const AirdropRanking = () => {
     rating: 5,
     detailsLink: '',
     isPinned: false,
+    isPaid: false,
   });
   const [currentRankingId, setCurrentRankingId] = useState<string | null>(null);
 
@@ -54,6 +56,7 @@ const AirdropRanking = () => {
       rating: 5,
       detailsLink: '',
       isPinned: false,
+      isPaid: false,
     });
     setCurrentRankingId(null);
   };
@@ -150,12 +153,16 @@ const AirdropRanking = () => {
             className="sm:w-64"
           />
           
-          {user?.isAdmin && (
-            <Button onClick={handleCreate} className="bg-crypto-green hover:bg-crypto-green/90">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Ranking
-            </Button>
-          )}
+          <div className="flex gap-2">
+            <CategoryManager type="airdrop" />
+            
+            {user?.isAdmin && (
+              <Button onClick={handleCreate} className="bg-crypto-green hover:bg-crypto-green/90">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Ranking
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -382,6 +389,20 @@ const AirdropRanking = () => {
                   onCheckedChange={(checked) => setFormData({ ...formData, isPinned: checked })}
                 />
                 <Label htmlFor="isPinned">Pinned</Label>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="isPaid" className="text-right">
+                Paid Content
+              </Label>
+              <div className="flex items-center space-x-2 col-span-3">
+                <Switch
+                  id="isPaid"
+                  checked={formData.isPaid}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isPaid: checked })}
+                />
+                <Label htmlFor="isPaid">Paid</Label>
               </div>
             </div>
           </div>
