@@ -1,82 +1,31 @@
+
 import { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
+import { Session } from "@supabase/supabase-js";
 import { toast } from "@/hooks/use-toast";
-
-// Define the User type
-interface ProfileUser {
-  id: string;
-  username: string;
-  email: string;
-  isAdmin?: boolean;
-  canUploadVideos?: boolean;
-  level?: number;
-  achievements?: Achievement[];
-}
-
-export interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  dateEarned: number;
-}
-
-interface AuthContextType {
-  user: ProfileUser | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => Promise<void>;
-  register: (username: string, email: string, password: string, inviteCode?: string) => Promise<boolean>;
-  addCategory: (type: "airdrop" | "testnet" | "tool" | "video", category: string) => boolean;
-  getCategories: (type: "airdrop" | "testnet" | "tool" | "video") => string[];
-  awardAchievement: (achievement: Omit<Achievement, "id" | "dateEarned">) => void;
-}
-
-// Store categories in localStorage
-const AIRDROP_CATEGORIES_KEY = "crypto_tracker_airdrop_categories";
-const TESTNET_CATEGORIES_KEY = "crypto_tracker_testnet_categories";
-const TOOL_CATEGORIES_KEY = "crypto_tracker_tool_categories";
-const VIDEO_CATEGORIES_KEY = "crypto_tracker_video_categories";
+import { 
+  ProfileUser, 
+  Achievement, 
+  AuthContextType 
+} from "@/types/auth";
+import {
+  AIRDROP_CATEGORIES_KEY,
+  TESTNET_CATEGORIES_KEY,
+  TOOL_CATEGORIES_KEY,
+  VIDEO_CATEGORIES_KEY,
+  defaultAirdropCategories,
+  defaultTestnetCategories,
+  defaultToolCategories,
+  defaultVideoCategories,
+  loadCategories,
+  addCategoryToList
+} from "@/utils/categoryUtils";
+import {
+  fetchUserProfile,
+  registerUser
+} from "@/utils/authUtils";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Default categories
-const defaultAirdropCategories = [
-  'Layer 1 & Testnet Mainnet',
-  'Telegram Bot Airdrops',
-  'Daily Check-in Airdrops',
-  'Twitter Airdrops',
-  'Social Airdrops',
-  'AI Airdrops',
-  'Wallet Airdrops',
-  'Exchange Airdrops',
-];
-
-const defaultTestnetCategories = [
-  'Galxe Testnet',
-  'Bridge Mining',
-  'Mining Sessions',
-];
-
-const defaultToolCategories = [
-  'Wallet Connect',
-  'Airdrop Claim Checker',
-  'Gas Fee Calculator',
-  'Testnet Token Faucets',
-  'Crypto Wallet Extensions',
-  'Swaps & Bridges',
-];
-
-const defaultVideoCategories = [
-  'Crypto Series',
-  'Top Testnets',
-  'Mining Projects',
-];
-
-// Define valid invite codes
-const VALID_INVITE_CODES = ["ishowcryptoairdrops", "Irfan@123#13"];
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<ProfileUser | null>(null);
@@ -90,34 +39,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Load categories on init
   useEffect(() => {
-    const storedAirdropCategories = localStorage.getItem(AIRDROP_CATEGORIES_KEY);
-    const storedTestnetCategories = localStorage.getItem(TESTNET_CATEGORIES_KEY);
-    const storedToolCategories = localStorage.getItem(TOOL_CATEGORIES_KEY);
-    const storedVideoCategories = localStorage.getItem(VIDEO_CATEGORIES_KEY);
-
-    if (storedAirdropCategories) {
-      setAirdropCategories(JSON.parse(storedAirdropCategories));
-    } else {
-      localStorage.setItem(AIRDROP_CATEGORIES_KEY, JSON.stringify(defaultAirdropCategories));
-    }
-
-    if (storedTestnetCategories) {
-      setTestnetCategories(JSON.parse(storedTestnetCategories));
-    } else {
-      localStorage.setItem(TESTNET_CATEGORIES_KEY, JSON.stringify(defaultTestnetCategories));
-    }
-
-    if (storedToolCategories) {
-      setToolCategories(JSON.parse(storedToolCategories));
-    } else {
-      localStorage.setItem(TOOL_CATEGORIES_KEY, JSON.stringify(defaultToolCategories));
-    }
-
-    if (storedVideoCategories) {
-      setVideoCategories(JSON.parse(storedVideoCategories));
-    } else {
-      localStorage.setItem(VIDEO_CATEGORIES_KEY, JSON.stringify(defaultVideoCategories));
-    }
+    setAirdropCategories(loadCategories(AIRDROP_CATEGORIES_KEY, defaultAirdropCategories));
+    setTestnetCategories(loadCategories(TESTNET_CATEGORIES_KEY, defaultTestnetCategories));
+    setToolCategories(loadCategories(TOOL_CATEGORIES_KEY, defaultToolCategories));
+    setVideoCategories(loadCategories(VIDEO_CATEGORIES_KEY, defaultVideoCategories));
   }, []);
 
   // Initialize authentication state
@@ -132,57 +57,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
           // Fetch user profile
           setTimeout(async () => {
-            try {
-              const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', currentSession.user.id)
-                .single();
-                
-              if (error) throw error;
-              
-              if (data) {
-                // Special handling for the admin user
-                const isSpecialUser = data.email === "malickirfan00@gmail.com" && 
-                                     data.username === "UmarCryptospace";
-
-                // If it's our special user, make sure they have admin privileges
-                if (isSpecialUser && (!data.is_admin || !data.is_video_creator)) {
-                  // Update their privileges in the database
-                  const { error: updateError } = await supabase
-                    .from('profiles')
-                    .update({ 
-                      is_admin: true, 
-                      is_video_creator: true,
-                      level: Math.max(data.level || 1, 10) // Give them a high level
-                    })
-                    .eq('id', currentSession.user.id);
-                  
-                  if (updateError) {
-                    console.error("Error updating admin privileges:", updateError);
-                  } else {
-                    data.is_admin = true;
-                    data.is_video_creator = true;
-                    data.level = Math.max(data.level || 1, 10);
-                  }
-                }
-                
-                const profileUser: ProfileUser = {
-                  id: data.id,
-                  username: data.username,
-                  email: data.email,
-                  isAdmin: data.is_admin,
-                  canUploadVideos: data.is_video_creator,
-                  level: data.level || 1,
-                  achievements: [],
-                };
-                setUser(profileUser);
-              }
-              setIsLoading(false);
-            } catch (error) {
-              console.error('Error fetching user profile:', error);
-              setIsLoading(false);
+            const profileUser = await fetchUserProfile(currentSession.user.id);
+            if (profileUser) {
+              setUser(profileUser);
             }
+            setIsLoading(false);
           }, 0);
         } else {
           setUser(null);
@@ -199,54 +78,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (currentSession?.user) {
         setIsAuthenticated(true);
         // Fetch user profile
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', currentSession.user.id)
-          .single()
-          .then(({ data, error }) => {
-            if (error) {
-              console.error('Error fetching user profile:', error);
-              setIsLoading(false);
-              return;
-            }
-            
-            if (data) {
-              // Special handling for the admin user
-              const isSpecialUser = data.email === "malickirfan00@gmail.com" && 
-                                   data.username === "UmarCryptospace";
-
-              // If it's our special user, make sure they have admin privileges
-              if (isSpecialUser && (!data.is_admin || !data.is_video_creator)) {
-                // Update their privileges in the database
-                supabase
-                  .from('profiles')
-                  .update({ 
-                    is_admin: true, 
-                    is_video_creator: true,
-                    level: Math.max(data.level || 1, 10) // Give them a high level
-                  })
-                  .eq('id', currentSession.user.id)
-                  .then(({ error: updateError }) => {
-                    if (updateError) {
-                      console.error("Error updating admin privileges:", updateError);
-                    } else {
-                      data.is_admin = true;
-                      data.is_video_creator = true;
-                      data.level = Math.max(data.level || 1, 10);
-                    }
-                  });
-              }
-              
-              const profileUser: ProfileUser = {
-                id: data.id,
-                username: data.username,
-                email: data.email,
-                isAdmin: data.is_admin,
-                canUploadVideos: data.is_video_creator,
-                level: data.level || 1,
-                achievements: [],
-              };
+        fetchUserProfile(currentSession.user.id)
+          .then(profileUser => {
+            if (profileUser) {
               setUser(profileUser);
             }
             setIsLoading(false);
@@ -282,68 +116,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const register = async (username: string, email: string, password: string, inviteCode?: string) => {
-    try {
-      // Check if invite code is valid or if it's the special admin user
-      const isSpecialUser = email === "malickirfan00@gmail.com" && 
-                            username === "UmarCryptospace" && 
-                            inviteCode === "Irfan@123#13";
-      
-      // Validate invite code
-      if (!isSpecialUser && (!inviteCode || !VALID_INVITE_CODES.includes(inviteCode))) {
-        toast({
-          title: "Registration failed",
-          description: "Invalid invite code. Please use a valid invite code.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // Regular registration logic
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username,
-            // Set admin flag for the special user
-            is_admin: isSpecialUser,
-            is_video_creator: isSpecialUser,
-          },
-        },
-      });
-      
-      if (error) {
-        toast({
-          title: "Registration failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      // If it's the special user, update the profile directly
-      if (isSpecialUser) {
-        toast({
-          title: "Admin Registration successful",
-          description: "Welcome, Admin! You have full access to the platform.",
-        });
-      } else {
-        toast({
-          title: "Registration successful",
-          description: "Please check your email to verify your account.",
-        });
-      }
-      
-      return true;
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      toast({
-        title: "Registration failed",
-        description: error.message || "An error occurred during registration",
-        variant: "destructive",
-      });
-      return false;
-    }
+    return registerUser(username, email, password, inviteCode);
   };
 
   const logout = async () => {
@@ -361,32 +134,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     switch (type) {
       case "airdrop":
-        if (!airdropCategories.includes(category)) {
-          const newCategories = [...airdropCategories, category];
-          setAirdropCategories(newCategories);
-          localStorage.setItem(AIRDROP_CATEGORIES_KEY, JSON.stringify(newCategories));
-        }
+        setAirdropCategories(prev => addCategoryToList(prev, category, AIRDROP_CATEGORIES_KEY));
         break;
       case "testnet":
-        if (!testnetCategories.includes(category)) {
-          const newCategories = [...testnetCategories, category];
-          setTestnetCategories(newCategories);
-          localStorage.setItem(TESTNET_CATEGORIES_KEY, JSON.stringify(newCategories));
-        }
+        setTestnetCategories(prev => addCategoryToList(prev, category, TESTNET_CATEGORIES_KEY));
         break;
       case "tool":
-        if (!toolCategories.includes(category)) {
-          const newCategories = [...toolCategories, category];
-          setToolCategories(newCategories);
-          localStorage.setItem(TOOL_CATEGORIES_KEY, JSON.stringify(newCategories));
-        }
+        setToolCategories(prev => addCategoryToList(prev, category, TOOL_CATEGORIES_KEY));
         break;
       case "video":
-        if (!videoCategories.includes(category)) {
-          const newCategories = [...videoCategories, category];
-          setVideoCategories(newCategories);
-          localStorage.setItem(VIDEO_CATEGORIES_KEY, JSON.stringify(newCategories));
-        }
+        setVideoCategories(prev => addCategoryToList(prev, category, VIDEO_CATEGORIES_KEY));
         break;
     }
     
